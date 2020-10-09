@@ -22,4 +22,3 @@ exports.getDay = function () {
     
 }
 
-console.log(module);
