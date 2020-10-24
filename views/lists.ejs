@@ -15,21 +15,22 @@
         <h1 class="heading"> <%= listTitle %> </h1>
     </div>
 
-    <div class="box">
-        <% newTasks.forEach(item => { %>
+    <form action="/delete" method="post">
+        <div class="box">
+            <% newTasks.forEach(function(i) { %>
             <div class="item">
-            <input type="checkbox">
-            <p><%= item.item %> </p>
-        </div>
-        <% }); %>
-        
-        
-       
-        <form class="item" action="/" method="POST">
-            <input type="text" name="newItem" placeholder=" Go type in your tasks !" autocomplete="off">
-            <button type="submit" name="button" value="<%=listTitle%>">+</button>
-        </form>
-   
+                <input type="checkbox" name="checked" value="<%=i._id%>" onChange="this.form.submit()">
+                <p><%= i.item %> </p>
+            </div>
+            <% }); %>
+    </form>
+
+
+    <form class="item" action="/" method="POST">
+        <input type="text" name="newItem" placeholder=" Go type in your tasks !" autocomplete="off">
+        <button type="submit" name="button" value="<%=listTitle%>">+</button>
+    </form>
+
     </div>
 
 

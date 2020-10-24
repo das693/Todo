@@ -7,7 +7,6 @@ const date = require(__dirname + "/date.js");
 const app = express();
 const mongoose = require("mongoose");
 
-var items=[]
 
 app.use(express.static("public"));
 
@@ -28,47 +27,67 @@ const Task = mongoose.model("task", taskSchema);
 
 // items
 const item1 = new Task({
-    item:"Swimming"
+    item: "Swimming"
 });
 const item2 = new Task({
-    item:"fishing"
+    item: "fishing"
 });
 const item3 = new Task({
-    item:"Trekking"
+    item: "Trekking"
 });
+
+
 
 // db queries
 
-
-
+// GET AND POST REQUESTS
 app.get("/", function (req, res) {
 
-    Task.find({},function (err,i) {
-        res.render("lists", { listTitle: "Today", newTasks: i });
-    })   
-    // let today = date.getDate();
-    
+    Task.find({}, function (err, i) {
+        if (i.length === 0) {
+            Task.insertMany(items, function (err) {
+                if (err) {
+                    console.log(err);
+                } else {
+                    console.log("Saved");
+                }
+            });
+            res.redirect("/");
+        } else {
+            res.render("lists", { listTitle: today, newTasks: i });
+        }
+
+    });
+    let today = date.getDate();
 
 });
 
 app.post("/", function (req, res) {
 
-    let item = req.body.newItem;
+    const itemName = req.body.newItem;
+    const item = new Task({
+        item: itemName
+    });
+    item.save();
+    res.redirect("/");
+});
 
-    if (req.body.button === "Work List") {
-        workitems.push(item);
-        res.redirect("/work");
-    } else {
-        items.push(item);
-        res.redirect("/");
-    }
+app.post("/delete", function (req, res) {
+    const checkedItemID=req.body.checked
+    
+    Task.findByIdAndDelete(checkedItemID,function (err) {
+        if (err) {
+            console.log(err);
+        }else{
+            res.redirect("/")
+        }
+    });
+    
 
 });
 
 app.get("/work", function (req, res) {
     res.render("lists", { listTitle: "Work List", newTasks: workitems });
-
-
 });
 
 app.listen(3000, function () {
