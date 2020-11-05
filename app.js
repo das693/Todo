@@ -17,35 +17,48 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // connecting to mongodb using mongoose
 mongoose.connect("mongodb://localhost:27017/todolistDB", { useNewUrlParser: true, useUnifiedTopology: true });
 
-// creating the schema
+// Schema
 const taskSchema = new mongoose.Schema({
     item: String
 });
 
-// creating the model
+
+
+
+// Model
 const Task = mongoose.model("task", taskSchema);
 
-// items
 const item1 = new Task({
-    item: "Swimming"
+    item: "Welcome to your to-do list"
 });
 const item2 = new Task({
-    item: "fishing"
+    item: "Hit the + button to add an item"
 });
 const item3 = new Task({
-    item: "Trekking"
-});
+    item: "<-- Hit to delete an item"
+})
+
+const defaultItems = [item1, item2, item3];
 
 
 
-// db queries
+// Schema for custom lists
+
+const listSchema = new mongoose.Schema({
+    name: String,
+    items: [taskSchema]
+})
+
+// Model for custom lists
+
+const List = mongoose.model("list", listSchema);
 
 // GET AND POST REQUESTS
 app.get("/", function (req, res) {
 
-    Task.find({}, function (err, i) {
-        if (i.length === 0) {
-            Task.insertMany(items, function (err) {
+    Task.find({}, function (err, foundItems) {
+        if (foundItems.length === 0) {
+            Task.insertMany(defaultItems, function (err) {
                 if (err) {
                     console.log(err);
                 } else {
@@ -54,7 +67,7 @@ app.get("/", function (req, res) {
             });
             res.redirect("/");
         } else {
-            res.render("lists", { listTitle: today, newTasks: i });
+            res.render("lists", { listTitle: today, newTasks: foundItems });
         }
 
     });
@@ -63,33 +76,66 @@ app.get("/", function (req, res) {
 });
 
 app.post("/", function (req, res) {
-
+    const listName = req.body.button
     const itemName = req.body.newItem;
+    let today = date.getDate();
     const item = new Task({
         item: itemName
     });
-    item.save();
-    res.redirect("/");
+    if (listName === today) {
+        item.save();
+        res.redirect("/");
+    } else {
+        List.findOne({name:listName},function (err,foundList) {
+            foundList.items.push(item)
+            foundList.save();
+        })
+        res.redirect("/" + listName);
+    }
+
 });
 
 app.post("/delete", function (req, res) {
-    const checkedItemID=req.body.checked
-    
-    Task.findByIdAndDelete(checkedItemID,function (err) {
+    const checkedItemID = req.body.checked
+
+    Task.findByIdAndDelete(checkedItemID, function (err) {
         if (err) {
             console.log(err);
-        }else{
+        } else {
             res.redirect("/")
         }
     });
-    
 
 });
 
-app.get("/work", function (req, res) {
-    res.render("lists", { listTitle: "Work List", newTasks: workitems });
+// Custom lists
+app.get("/:customListName", function (req, res) {
+
+    const customListName = req.params.customListName
+    List.findOne({ name: customListName }, function (err, foundList) {
+        if (!err) {
+            if (!foundList) {
+                // create a new list
+                const list = new List({
+                    name: customListName,
+                    items: defaultItems
+                });
+                list.save();
+                res.redirect("/" + customListName);
+            } else {
+                // show an extisting list
+
+                res.render("lists", { listTitle: foundList.name, newTasks: foundList.items });
+            }
+        }
+    })
 });
 
 app.listen(3000, function () {
     console.log("Server started at port 3000");
 });
+
+
+
+// items
+// rsrrsrs
