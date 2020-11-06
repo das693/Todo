@@ -6,6 +6,7 @@ const bodyParser = require("body-parser");
 const date = require(__dirname + "/date.js");
 const app = express();
 const mongoose = require("mongoose");
+const _ = require("lodash");
 
 
 app.use(express.static("public"));
@@ -14,6 +15,8 @@ app.set("view engine", "ejs");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
+mongoose.set('useFindAndModify', false);
+
 // connecting to mongodb using mongoose
 mongoose.connect("mongodb://localhost:27017/todolistDB", { useNewUrlParser: true, useUnifiedTopology: true });
 
@@ -21,9 +24,6 @@ mongoose.connect("mongodb://localhost:27017/todolistDB", { useNewUrlParser: true
 const taskSchema = new mongoose.Schema({
     item: String
 });
-
-
-
 
 // Model
 const Task = mongoose.model("task", taskSchema);
@@ -39,7 +39,6 @@ const item3 = new Task({
 })
 
 const defaultItems = [item1, item2, item3];
-
 
 
 // Schema for custom lists
@@ -86,7 +85,7 @@ app.post("/", function (req, res) {
         item.save();
         res.redirect("/");
     } else {
-        List.findOne({name:listName},function (err,foundList) {
+        List.findOne({ name: listName }, function (err, foundList) {
             foundList.items.push(item)
             foundList.save();
         })
@@ -97,21 +96,33 @@ app.post("/", function (req, res) {
 
 app.post("/delete", function (req, res) {
     const checkedItemID = req.body.checked
+    const listName = req.body.listName;
 
-    Task.findByIdAndDelete(checkedItemID, function (err) {
-        if (err) {
-            console.log(err);
-        } else {
-            res.redirect("/")
-        }
-    });
+    let today = date.getDate();
 
+    if (listName == today) {
+
+        Task.findByIdAndDelete(checkedItemID, function (err) {
+            if (err) {
+                console.log(err);
+            } else {
+                res.redirect("/")
+            }
+        });
+    } else {
+
+        List.findOneAndUpdate({ name: listName }, { $pull: { items: { _id: checkedItemID } } }, function (err, foundList) {
+            if (!err) {
+                res.redirect("/" + listName);
+            }
+        });
+    }
 });
 
 // Custom lists
 app.get("/:customListName", function (req, res) {
 
-    const customListName = req.params.customListName
+    const customListName = _.capitalize(req.params.customListName)
     List.findOne({ name: customListName }, function (err, foundList) {
         if (!err) {
             if (!foundList) {
